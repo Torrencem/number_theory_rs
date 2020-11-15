@@ -1,0 +1,14 @@
+[package]
+name = "number_theory"
+version = "0.1.0"
+authors = ["Matt Torrence <matt@torrencefamily.net>"]
+readme = "README.md"
+edition = "2018"
+
+[workspace]
+members = [
+    "crates/traits",
+    "crates/polynomial",
+#    "crates/finite_field",
+#    "crates/number_field",
+]
