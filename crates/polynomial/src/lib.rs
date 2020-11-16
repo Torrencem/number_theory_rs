@@ -686,6 +686,23 @@ where
     }
 }
 
+impl<T> EuclideanDomain for Polynomial<T>
+where
+    T: EuclideanDomain + Clone + Eq
+{
+    fn modulus(self, other: Self) -> Self {
+        pseudo_div(self, other).1
+    }
+
+    fn norm(&self) -> u64 {
+        self.degree() as u64
+    }
+
+    fn gcd(self, other: Self) -> Self {
+        extended_gcd(self, other).2
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -787,6 +804,26 @@ mod tests {
         let a = Polynomial::new(vec![-15i64, 10, 1]);
         let b = Polynomial::new(vec![10i64, 5, -2]);
         assert_eq!(resultant(a, b), -3975);
+
+        // An example with multiple variables
+        // https://www.wolframalpha.com/input/?i=resultant%28x%5E2+-+2x+%2B+z%2C+x%5E3+-+x+-+z%29
+        // x^2 -2x + z
+        let a = Polynomial::new(vec![
+            Polynomial::new(vec![0, 1]),
+            Polynomial::new(vec![-2]),
+            Polynomial::new(vec![1]),
+        ]);
+        
+        // x^3 - x - z
+        let b = Polynomial::new(vec![
+            Polynomial::new(vec![0, -1]),
+            Polynomial::new(vec![-1]),
+            Polynomial::new(vec![]),
+            Polynomial::new(vec![1]),
+        ]);
+
+        // z^3 + 9z^2 - 9z
+        assert_eq!(resultant(a, b).data(), &[0, -9, 9, 1]);
     }
 
     fn correct_pseudo_division(a: Polynomial<i32>, b: Polynomial<i32>) -> bool {
