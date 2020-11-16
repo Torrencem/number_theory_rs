@@ -2,13 +2,13 @@
 use alga::general::*;
 use num_traits::PrimInt;
 
-/// A convenience trait to provide a pow() function for alga MultiplicativeGroups. Automatically implemented for
-/// all rings using the Exponentiation by squaring algorithm: https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+/// A convenience trait to provide a pow() function for alga MultiplicativeMonoids. Automatically implemented for
+/// all MultiplicativeMonoids using the Exponentiation by squaring algorithm: https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 pub trait Powable {
     fn pow(self, power: u32) -> Self;
 }
 
-impl<T: MultiplicativeGroup> Powable for T {
+impl<T: MultiplicativeMonoid> Powable for T {
     fn pow(mut self, mut power: u32) -> Self {
         // https://en.wikipedia.org/wiki/Exponentiation_by_squaring
         if power == 0 {
@@ -58,5 +58,20 @@ impl<T: Ring + ClosedDiv + PrimInt> EuclideanDomain for T
 
     fn norm(&self) -> u64 {
         self.to_i64().unwrap().abs() as u64
+    }
+}
+
+/// Computes the GCD of two elements of a EuclideanDomain
+pub fn gcd<Int: EuclideanDomain>(a: Int, b: Int) -> Int {
+    a.gcd(b)
+}
+
+/// Computes the LCM of two elements of a EuclideanDomain
+pub fn lcm<Int: EuclideanDomain>(a: Int, b: Int) -> Int {
+    // quick optimization
+    if a == b {
+        a
+    } else {
+        a.clone() * b.clone() / gcd(a, b)
     }
 }
