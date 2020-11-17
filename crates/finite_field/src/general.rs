@@ -2,9 +2,13 @@
 use crate::prime::FPElt;
 use nt_polynomial::*;
 use nt_traits::*;
-use num_traits::Zero;
+use num_traits::{Zero, One};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Neg};
+
+use alga::general::*;
+
+#[derive(Clone, Debug)]
 /// An element of the finite field F_{p^n}, for prime p and natural number n
 pub struct FPnElt {
     /// A representative of the equivalence class of F_p[x] / <r(x)>
@@ -13,14 +17,22 @@ pub struct FPnElt {
     r: Polynomial<FPElt>,
 }
 
-impl FPnElt {
-    pub fn p(&self) -> u32 {
-        self.r.data()[0].p
+impl std::cmp::PartialEq for FPnElt {
+    fn eq(&self, other: &FPnElt) -> bool {
+        self.val == other.val
     }
+}
 
-    pub fn n(&self) -> usize {
-        self.r.degree()
-    }
+impl std::cmp::Eq for FPnElt { }
+
+impl FPnElt {
+    // pub fn p(&self) -> u32 {
+    //     self.r.data()[0].p
+    // }
+    //
+    // pub fn n(&self) -> usize {
+    //     self.r.degree()
+    // }
 
     pub fn new(val: Polynomial<FPElt>, p: u32, n: usize) -> Self {
         FPnElt {
@@ -43,7 +55,6 @@ fn find_irreducible(p: u32, n: usize) -> Polynomial<FPElt> {
             contents[i] = FPElt { val: ((poly_val % p.pow((i + 1) as u32)) / p.pow(i as u32)) as i64, p };
         }
         let poly = Polynomial::new(contents.clone());
-        dbg!(&poly);
         if is_irreducible(&poly) {
             return poly;
         }
@@ -60,21 +71,218 @@ pub fn is_irreducible(r: &Polynomial<FPElt>) -> bool {
     let x = Polynomial::new(vec![FPElt { val: 0, p }, FPElt { val: 1, p }]);
     let mut u = x.clone();
     for _ in 1..m {
-        // u = u.pow(p).modulus(r.clone());
         u = u.pow(p);
         u = u.modulus(r.clone());
-        // Extra step
-        // if (u.clone() - x.clone()).is_zero() {
-        //     return false;
-        // }
-        dbg!(r.clone());
-        dbg!(u.clone() - x.clone());
         let g = gcd(r.clone(), u.clone() - x.clone());
         if g.degree() != 0 || g.is_zero() {
             return false;
         }
     }
     true
+}
+
+// These impls are analogous to prime.rs
+
+impl Add for FPnElt {
+    type Output = FPnElt;
+
+    fn add(self, other: FPnElt) -> FPnElt {
+        if self.r.is_zero() && other.r.is_zero() {
+            return FPnElt {
+                r: Zero::zero(),
+                val: self.val + other.val,
+            }
+        }
+        let r = if self.r.is_zero() { other.r.clone() } else { self.r.clone() };
+        FPnElt {
+            val: (self.val + other.val).modulus(r.clone()),
+            r,
+        }
+    }
+}
+
+impl AddAssign for FPnElt {
+    fn add_assign(&mut self, rhs: FPnElt) {
+        *self = self.clone() + rhs;
+    }
+}
+
+impl Sub for FPnElt {
+    type Output = FPnElt;
+
+    fn sub(self, other: FPnElt) -> FPnElt {
+        if self.r.is_zero() && other.r.is_zero() {
+            return FPnElt {
+                r: Zero::zero(),
+                val: self.val - other.val,
+            }
+        }
+        let r = if self.r.is_zero() { other.r.clone() } else { self.r.clone() };
+        FPnElt {
+            val: (self.val - other.val).modulus(r.clone()),
+            r,
+        }
+    }
+}
+
+impl SubAssign for FPnElt {
+    fn sub_assign(&mut self, rhs: FPnElt) {
+        *self = self.clone() - rhs;
+    }
+}
+
+impl Mul for FPnElt {
+    type Output = FPnElt;
+
+    fn mul(self, other: FPnElt) -> FPnElt {
+        if self.r.is_zero() && other.r.is_zero() {
+            return FPnElt {
+                r: Zero::zero(),
+                val: self.val * other.val,
+            }
+        }
+        let r = if self.r.is_zero() { other.r.clone() } else { self.r.clone() };
+        FPnElt {
+            val: (self.val * other.val).modulus(r.clone()),
+            r,
+        }
+    }
+}
+
+impl MulAssign for FPnElt {
+    fn mul_assign(&mut self, rhs: FPnElt) {
+        *self = self.clone() * rhs;
+    }
+}
+
+impl Div for FPnElt {
+    type Output = FPnElt;
+
+    fn div(self, other: FPnElt) -> FPnElt {
+        self * (<Self as TwoSidedInverse<Multiplicative>>::two_sided_inverse(&other))
+    }
+}
+
+impl DivAssign for FPnElt {
+    fn div_assign(&mut self, rhs: FPnElt) {
+        *self = self.clone() / rhs
+    }
+}
+
+impl Neg for FPnElt {
+    type Output = FPnElt;
+
+    fn neg(self) -> FPnElt {
+        if self.r.is_zero() {
+            return FPnElt {
+                r: Zero::zero(),
+                val: -self.val,
+            }
+        }
+        FPnElt {
+            r: self.r.clone(),
+            val: (-self.val).modulus(self.r),
+        }
+    }
+}
+
+impl One for FPnElt {
+    fn one() -> Self {
+        FPnElt {
+            r: Zero::zero(),
+            val: One::one(),
+        }
+    }
+}
+
+impl Zero for FPnElt {
+    fn is_zero(&self) -> bool {
+        self.val.is_zero()
+    }
+
+    fn zero() -> Self {
+        FPnElt {
+            r: Zero::zero(),
+            val: Zero::zero(),
+        }
+    }
+}
+
+impl AbstractMagma<Additive> for FPnElt {
+    fn operate(&self, right: &Self) -> Self {
+        self.clone() + right.clone()
+    }
+}
+
+impl Identity<Additive> for FPnElt {
+    fn identity() -> Self {
+        Zero::zero()
+    }
+}
+
+impl TwoSidedInverse<Additive> for FPnElt {
+    fn two_sided_inverse(&self) -> Self {
+        -self.clone()
+    }
+}
+
+impl AbstractQuasigroup<Additive> for FPnElt {}
+impl AbstractLoop<Additive> for FPnElt {}
+impl AbstractSemigroup<Additive> for FPnElt {}
+impl AbstractMonoid<Additive> for FPnElt {}
+impl AbstractGroup<Additive> for FPnElt {}
+impl AbstractGroupAbelian<Additive> for FPnElt {}
+
+impl AbstractMagma<Multiplicative> for FPnElt {
+    fn operate(&self, right: &Self) -> Self {
+        self.clone() * right.clone()
+    }
+}
+
+impl Identity<Multiplicative> for FPnElt {
+    fn identity() -> Self {
+        One::one()
+    }
+}
+
+impl TwoSidedInverse<Multiplicative> for FPnElt {
+    fn two_sided_inverse(&self) -> Self {
+        todo!("Multiplicative inverse using Bezout coefficients and extended_gcd")
+    }
+}
+
+impl AbstractQuasigroup<Multiplicative> for FPnElt {}
+impl AbstractLoop<Multiplicative> for FPnElt {}
+impl AbstractSemigroup<Multiplicative> for FPnElt {}
+impl AbstractMonoid<Multiplicative> for FPnElt {}
+impl AbstractGroup<Multiplicative> for FPnElt {}
+impl AbstractGroupAbelian<Multiplicative> for FPnElt {}
+
+impl AbstractRing<Additive, Multiplicative> for FPnElt {}
+impl AbstractRingCommutative<Additive, Multiplicative> for FPnElt {}
+impl AbstractField<Additive, Multiplicative> for FPnElt {}
+
+// Trivial implementation for a field
+impl EuclideanDomain for FPnElt {
+    fn modulus(self, other: Self) -> Self {
+        let r = if self.r.is_zero() { other.r.clone() } else { self.r.clone() };
+        FPnElt {
+            val: Zero::zero(),
+            r
+        }
+    }
+
+    fn norm(&self) -> u64 {
+        0
+    }
+
+    fn gcd(self, other: Self) -> Self {
+        let r = if self.r.is_zero() { other.r } else { self.r };
+        FPnElt {
+            val: One::one(),
+            r
+        }
+    }
 }
 
 #[cfg(test)]
