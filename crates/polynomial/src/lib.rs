@@ -545,15 +545,16 @@ impl<T: Zero + One + Clone> One for Polynomial<T> {
 
 // Polynomial Algorithms
 
-/// Compute the pseudo-division of two polynomials. It must be true that a_poly.degree() >=
-/// b_poly.degree().
+/// Compute the pseudo-division of two polynomials.
 ///
 /// Given two polynomials A and B, the pseudo-division of A and B computes polynomials Q and R such
 /// that kA = BQ + R, where the degrees of Q and R are as small as possible, and k might be a
 /// non-one constant (this is the pseudo in pseudo-division). This function returns (Q, R).
 pub fn pseudo_div<T: Ring + Eq + Clone>(a_poly: Polynomial<T>, b_poly: Polynomial<T>) -> (Polynomial<T>, Polynomial<T>)
 {
-    assert!(a_poly.degree() >= b_poly.degree());
+    if b_poly.degree() > a_poly.degree() {
+        return (Zero::zero(), a_poly);
+    }
 
     if b_poly.degree() == 0 {
         return (a_poly, Polynomial::zero());
@@ -847,5 +848,12 @@ mod tests {
         let a = Polynomial::new(vec![2, 3, 1, 0, 1]);
         let b = Polynomial::new(vec![5, 10, 20, 3]);
         assert!(correct_pseudo_division(a, b));
+    }
+
+    #[test]
+    fn test_gcd() {
+        let a = Polynomial::new(vec![5, 5, 5, 1]);
+        let b = Polynomial::new(vec![3, 2, 1]);
+        dbg!(gcd(a, b));
     }
 }

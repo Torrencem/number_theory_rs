@@ -9,6 +9,6 @@ edition = "2018"
 members = [
     "crates/traits",
     "crates/polynomial",
-#    "crates/finite_field",
+    "crates/finite_field",
 #    "crates/number_field",
 ]
