@@ -59,7 +59,7 @@ impl<T: Zero> Polynomial<T> {
     /// Creates new `Polynomial`.
     ///
     /// ```rust
-    /// use polynomial::Polynomial;
+    /// use nt_polynomial::Polynomial;
     /// let poly = Polynomial::new(vec![1, 2, 3]);
     /// assert_eq!("1 + 2*x + 3*x^2", poly.pretty("x"));
     /// ```
@@ -81,7 +81,7 @@ impl<T: Zero + One + Clone> Polynomial<T> {
     /// Evaluates the polynomial value.
     ///
     /// ```rust
-    /// use polynomial::Polynomial;
+    /// use nt_polynomial::Polynomial;
     /// let poly = Polynomial::new(vec![1, 2, 3]);
     /// assert_eq!(1, poly.eval(0));
     /// assert_eq!(6, poly.eval(1));
@@ -650,7 +650,14 @@ pub fn resultant<T: EuclideanDomain + Eq + Clone>(mut a_poly: Polynomial<T>, mut
         g = a_poly.leading_coefficient().clone();
         h = h.clone().pow(1 - delta as u32) * g.clone().pow(delta as u32);
         if b_poly.degree() == 0 {
-            h = h.clone().pow(1 - a_poly.degree() as u32) * b_poly.leading_coefficient().clone().pow(a_poly.degree() as u32);
+            // Compute h^(1 - delta)g^delta. 1 - delta might be negative, so we might need to do
+            // division.
+            let h_pow = 1 - (a_poly.degree() as i64);
+            if h_pow < 0 {
+                h = b_poly.leading_coefficient().clone().pow(a_poly.degree() as u32) / h.clone().pow((-h_pow) as u32);
+            } else {
+                h = h.clone().pow(h_pow as u32) * b_poly.leading_coefficient().clone().pow(a_poly.degree() as u32);
+            }
             return s * t * h;
         }
     }
