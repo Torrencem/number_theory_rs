@@ -247,6 +247,7 @@ impl Identity<Multiplicative> for FPnElt {
 
 impl TwoSidedInverse<Multiplicative> for FPnElt {
     fn two_sided_inverse(&self) -> Self {
+        // As described in https://johnkerl.org/doc/ffcomp.pdf
         todo!("Multiplicative inverse using Bezout coefficients and extended_gcd")
     }
 }
