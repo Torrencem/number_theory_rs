@@ -1,11 +1,15 @@
 [package]
-name = "nt_finite_field"
+name = "nt_number_field"
 version = "0.1.0"
 authors = ["Matthew Torrence <matt@torrencefamily.net>"]
 edition = "2018"
 
 [dependencies]
-num-traits = "0.2"
+num-traits = "0.2.12"
 alga = "0.9.3"
+alga_derive = "0.9.2"
 nt_polynomial = { path = "../polynomial" }
 nt_traits = { path = "../traits" }
+nt_finite_field = { path = "../finite_field" }
+derive_more = "0.99.10"
+lazy_static = "1.4.0"

@@ -10,5 +10,5 @@ members = [
     "crates/traits",
     "crates/polynomial",
     "crates/finite_field",
-#    "crates/number_field",
+    "crates/number_field",
 ]
